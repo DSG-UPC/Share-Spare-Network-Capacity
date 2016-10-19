@@ -16,17 +16,18 @@
 TC=/sbin/tc
 IF=eth0		    # Interface 
 DNLD=1mbit          # DOWNLOAD Limit
-UPLD=1mbit          # UPLOAD Limit 
+#UPLD=1mbit          # UPLOAD Limit 
 IP=216.3.128.12     # Host IP
 U32="$TC filter add dev $IF protocol ip parent 1:0 prio 1 u32"
  
 start() {
 
+#	$TC qdisc add dev $IF root tbf rate $DNLD latency 50ms burst 1540 
     $TC qdisc add dev $IF root handle 1: htb default 30
     $TC class add dev $IF parent 1: classid 1:1 htb rate $DNLD
-    $TC class add dev $IF parent 1: classid 1:2 htb rate $UPLD
+#    $TC class add dev $IF parent 1: classid 1:2 htb rate $UPLD
     $U32 match ip dst $IP/32 flowid 1:1
-    $U32 match ip src $IP/32 flowid 1:2
+#    $U32 match ip src $IP/32 flowid 1:2
 
 }
 
