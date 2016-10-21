@@ -22,10 +22,10 @@ U32="$TC filter add dev $IF protocol ip parent 1:0 prio 1 u32"
 start() {
 
 #	$TC qdisc add dev $IF root tbf rate $DNLD latency 50ms burst 1540
-#   $TC qdisc add $IF root cbq bandwidth $DNLD avpkt 1000 
-    $TC qdisc add dev $IF root handle 1: htb default 30
-    $TC class add dev $IF parent 1: classid 1:1 htb rate $DNLD
-    $U32 match ip dst $IP/32 flowid 1:1
+   $TC qdisc add $IF root cbq bandwidth $DNLD avpkt 1000 
+#    $TC qdisc add dev $IF root handle 1: htb default 30
+#    $TC class add dev $IF parent 1: classid 1:1 htb rate $DNLD
+#    $U32 match ip dst $IP/32 flowid 1:1
 }
 
 stop() {
