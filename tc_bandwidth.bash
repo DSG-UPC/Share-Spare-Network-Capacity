@@ -15,17 +15,25 @@
 #
 TC=/sbin/tc
 IF=eno1		    # Interface 
-DNLD=1mbit          # DOWNLOAD Limit
 IP=216.3.128.12     # Host IP
-U32="$TC filter add dev $IF protocol ip parent 1:0 prio 1 u32"
- 
+
+# Modelado basado en [10]
+# Download throughput (Mbps), Upload throughput (Mbps) andLatency - RTT (ms)
+# guifi.net 9.78, 7.82, 14
+# Telefonica 1.72, 0.54, 74
+
+DNLD=1.72mbps          # DOWNLOAD Limit
+LATENCY=74ms
+
 start() {
 
+# https://linux.die.net/man/8/tc-tbf
 #	$TC qdisc add dev $IF root tbf rate $DNLD latency 50ms burst 1540
-   $TC qdisc add $IF root cbq bandwidth $DNLD avpkt 1000 
-#    $TC qdisc add dev $IF root handle 1: htb default 30
-#    $TC class add dev $IF parent 1: classid 1:1 htb rate $DNLD
-#    $U32 match ip dst $IP/32 flowid 1:1
+
+# https://linux.die.net/man/8/tc-cbq
+#   $TC qdisc add $IF root cbq bandwidth $DNLD avpkt 1000
+    $TC qdisc add dev $IF root handle 1:0 netem delay $LATENCY
+	$TC qdisc add dev $IF parent 1:1 handle 10: cbq bandwidth $DNLD avpkt 1000
 }
 
 stop() {
