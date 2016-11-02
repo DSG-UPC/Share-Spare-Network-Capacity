@@ -2,6 +2,7 @@
 #
 # http://lartc.org/howto/lartc.qdisc.classful.html
 # http://www.docum.org/docum.org/tests/cbq/classes.php
+# http://lartc.org/howto/lartc.cookbook.ultimate-tc.html
 #
 
 TC=/sbin/tc
@@ -10,14 +11,15 @@ IF=eno1		    # Interface
 DNLD=1.72mbit          # DOWNLOAD Limit
 LIM1=1mbit          # for each class
 LIM2=1mbit          # for each class
+CEIL=2mbit
  
 start() {
     $TC qdisc add dev $IF root handle 1: htb default 30
     $TC class add dev $IF parent 1: classid 1:1 htb rate $DNLD burst 15k
 
     $TC class add dev $IF parent 1:1 classid 1:10 htb rate $LIM1 burst 15k
-    $TC class add dev $IF parent 1:1 classid 1:20 htb rate $LIM2 ceil 2mbit burst 15k
-    $TC class add dev $IF parent 1:1 classid 1:30 htb rate 1kbit ceil 2mbit burst 15k
+    $TC class add dev $IF parent 1:1 classid 1:20 htb rate $LIM2 ceil $CEIL burst 15k
+    $TC class add dev $IF parent 1:1 classid 1:30 htb rate 1kbit ceil $CEIL burst 15k
     $TC qdisc add dev $IF parent 1:10 handle 10: sfq perturb 10
     $TC qdisc add dev $IF parent 1:20 handle 20: sfq perturb 10
     $TC qdisc add dev $IF parent 1:30 handle 30: sfq perturb 10
