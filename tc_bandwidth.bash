@@ -22,7 +22,7 @@ IF=eno1		    # Interface
 # Telefonica 1.72, 0.54, 74
 
 DNLD=1.72mbit          # DOWNLOAD Limit
-LATENCY=74ms
+LATENCY=36ms      # RTT / 2
 
 start() {
 
