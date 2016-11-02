@@ -6,7 +6,7 @@
 #
 
 TC=/sbin/tc
-IF=eno1		    # Interface 
+IF=enx00e04c534458		    # Interface 
  
 start() {
     $TC qdisc add dev $IF root fq_codel
