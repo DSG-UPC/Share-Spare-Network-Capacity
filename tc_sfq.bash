@@ -1,15 +1,13 @@
 #!/bin/bash
 #
-#   http://manpages.ubuntu.com/manpages/xenial/en/man8/tc-fq_codel.8.html
-#   https://www.bufferbloat.net/projects/codel/wiki/RRUL_Rogues_Gallery/
-#   http://netseminar.stanford.edu/seminars/Inside_Codel_and_Fq_Codel.pdf
+# https://linux.die.net/man/8/tc-sfq
 #
 
 TC=/sbin/tc
 IF=eno1		    # Interface 
  
 start() {
-    $TC qdisc add dev $IF root fq_codel
+    $TC qdisc add dev $IF root sfq perturb 10
     show
 }
 
@@ -37,21 +35,21 @@ case "$1" in
 
   start)
 
-    echo -n "Starting CODEL shaping: "
+    echo -n "Starting SFQ shaping: "
     start
     echo "done"
     ;;
 
   stop)
 
-    echo -n "Stopping CODEL shaping: "
+    echo -n "Stopping SFQ shaping: "
     stop
     echo "done"
     ;;
 
   restart)
 
-    echo -n "Restarting CODEL shaping: "
+    echo -n "Restarting SFQ shaping: "
     restart
     echo "done"
     ;;
@@ -66,7 +64,7 @@ case "$1" in
   *)
 
     pwd=$(pwd)
-    echo "Usage: $(/usr/bin/dirname $pwd)/tc_codel.bash {start|stop|restart|show}"
+    echo "Usage: $(/usr/bin/dirname $pwd)/tc_sfq.bash {start|stop|restart|show}"
     ;;
 
 esac
