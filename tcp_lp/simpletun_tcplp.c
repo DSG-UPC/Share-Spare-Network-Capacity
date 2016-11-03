@@ -314,7 +314,7 @@ int main(int argc, char *argv[]) {
       perror("getsockopt");
       return 1;
     }
-    printf("optlen=%d optval=%s\n", optlen1, optval1);
+    do_debug("DEFAULT TCP optlen=%d optval=%s\n", optlen1, optval1);
     /*manos: Use the selected tcp*/
     strcpy(optval1, "lp");
     optlen1 = strlen(optval1);
@@ -324,11 +324,12 @@ int main(int argc, char *argv[]) {
     }
     /*manos: Chek if change in tcp algo applied*/
     optlen1 = TCP_CA_NAME_MAX;
-    if (getsockopt(ns, IPPROTO_TCP, TCP_CONGESTION, optval1, &optlen1) < 0) {
+    if (getsockopt(net_fd, IPPROTO_TCP, TCP_CONGESTION, optval1, &optlen1) < 0) {
       perror("getsockopt");
       return 1;
     }
-    printf("NEW optlen=%d optval=%s\n", optlen1, optval1);
+    do_debug("NEW TCP optlen=%d optval=%s\n", optlen1, optval1);
+	
     do_debug("SERVER: Client connected from %s\n", inet_ntoa(remote.sin_addr));
   }
   
