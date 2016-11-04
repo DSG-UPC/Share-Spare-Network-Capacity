@@ -8,7 +8,7 @@ import time
 
 clears = ['clear_codel','clear_ipip','clear_sfq','clear_tcplp']
 setups = ['setup_codel','setup_ipip','setup_sfq','setup_tcplp']
-exps = ['run_exp','run_exp_client']
+exps = ['run_exp','run_exp_client','run_exp_router']
 __all__ =  clears+setups+exps+['sync']
 
 
