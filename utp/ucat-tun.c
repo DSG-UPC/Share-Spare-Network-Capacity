@@ -64,8 +64,12 @@ utp_socket *s;
 
 int fd;
 int buf_len = 0;
-unsigned char *buf, *p;
+//unsigned char *buf, *p;
+char *buf, *p;
 int eof_flag, quit_flag, exit_code;
+
+// ROC
+int tap_fd;	
 
 void die(char *fmt, ...)
 {
@@ -210,7 +214,7 @@ uint64 callback_on_read(utp_callback_arguments *a)
 	p = a->buf;
 
 	while (left) {
-		len = write(STDOUT_FILENO, p, left);
+		len = write(tap_fd, p, left);
 		left -= len;
 		p += len;
 		debug("Wrote %d bytes, %d left\n", len, left);
@@ -525,7 +529,7 @@ void network_loop(void)
 
 	struct pollfd p[2];
 
-	p[0].fd = STDIN_FILENO;
+	p[0].fd = tap_fd;
 	p[0].events = (o_buf_size-buf_len && !eof_flag) ? POLLIN : 0;
 
 	p[1].fd = fd;
@@ -544,7 +548,8 @@ void network_loop(void)
 	}
 	else {
 		if ((p[0].revents & POLLIN) == POLLIN) {
-			len = read(STDIN_FILENO, buf+buf_len, o_buf_size-buf_len);
+			len = read(tap_fd, buf+buf_len, o_buf_size-buf_len);
+			debug("Read %d bytes\n", len);
 			if (len < 0 && errno != EINTR)
 				pdie("read stdin");
 			if (len == 0) {
@@ -614,7 +619,7 @@ int main(int argc, char *argv[])
 	
 	o_local_address = "0.0.0.0";
 
-    int tap_fd;	
+// ROC
 	int flags = IFF_TUN;
 	char if_name[IFNAMSIZ] = "";
 
