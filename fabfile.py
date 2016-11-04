@@ -8,7 +8,7 @@ import time
 
 clears = ['clear_codel','clear_ipip','clear_sfq','clear_tcplp']
 setups = ['setup_codel','setup_ipip','setup_sfq','setup_tcplp']
-exps = ['run_exp','run_exp_client','run_exp_router']
+exps = ['run_exp']
 __all__ =  clears+setups+exps+['sync']
 
 
@@ -170,7 +170,7 @@ def run_exp_router(exp,mixed,exp_no,duration,ip):
                 run('at now + 2 minutes < command')
 
 def run_exp():
-	"""Experiment traffic and background traffic from client"""
+	"""Experiment traffic and background traffic from client, if mix chosen"""
 	exp = raw_input('Exp name?')
 	mixed = raw_input('mixed?(mix/no)')
 	exp_no = raw_input('Exp number?')
@@ -178,7 +178,8 @@ def run_exp():
 	duration = raw_input('Duration? (20s)')
 	ip = "147.83.118.124"
 	execute(run_exp_client,exp,mixed,exp_no,duration,ip)
-	execute(run_exp_client2,exp,mixed,exp_no,duration,ip)
+	if mixed == 'mix':
+		execute(run_exp_client2,exp,mixed,exp_no,duration,ip)
 
 def setup_nat(inface,outface):
 	sudo('iptables -t nat -A POSTROUTING -o '+outface+' -j MASQUERADE')
