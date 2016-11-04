@@ -196,5 +196,6 @@ def restore_nat():
 
 @roles('router')
 def sync():
+	"""Sync exp result folders from client to router"""
 	run('rsync -rz user@192.168.240.2:~/manos/wrk2/exps /home/xarokk/manos/.')
 
