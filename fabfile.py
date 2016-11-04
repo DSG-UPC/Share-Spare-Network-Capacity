@@ -133,52 +133,52 @@ def clear_tcplp():
         execute(clear_tcplp_server)
 
 @roles('client')
-def run_exp_client():
+def run_exp_client(exp,mixed,exp_no,duration,ip):
 	"""Client monitored traffic experiment"""
-	if EXP in ['ipip','tcplp','ledbat']:
-		IP = "192.168.10.1"
+	if exp in ['ipip','tcplp','ledbat']:
+		ip = "192.168.10.1"
 	with cd('/home/user/manos/wrk2'):
-                cmd_env = 'env dir='+EXP+' num='+EXP_NO+' mixed='+MIXED+' '
-                cmd_wrk = ' ./wrk -t1 -c5 -d'+DURATION+' -R5 --latency --script scripts/report.lua '
-		cmd_wrk_url = ' http://'+IP+'/02Mb.html '
+                cmd_env = 'env dir='+exp+' num='+exp_no+' mixed='+mixed+' '
+                cmd_wrk = ' ./wrk -t1 -c5 -d'+duration+' -R5 --latency --script scripts/report.lua '
+		cmd_wrk_url = ' http://'+ip+'/02Mb.html '
 		cmd =  cmd_env+cmd_wrk+cmd_wrk_url
 		run('echo '+cmd+' > command')
 		run('at now + 2 minutes < command')
 
 @roles('client')
-def run_exp_client2():
+def run_exp_client2(exp,mixed,exp_no,duration,ip):
 	"""Client background(shared) traffic"""
-	if EXP in ['ipip','tcplp','ledbat']:
-                IP = "192.168.10.1"
+	if exp in ['ipip','tcplp','ledbat']:
+                ip = "192.168.10.1"
         with cd('/home/user/manos/wrk2'):
-		cmd_wrk = ' ./wrk -t1 -c25 -d'+DURATION+' -R25'
-                cmd_wrk_url = ' http://'+IP+'/004Mb.html '
+		cmd_wrk = ' ./wrk -t1 -c25 -d'+duration+' -R25'
+                cmd_wrk_url = ' http://'+ip+'/004Mb.html '
                 cmd =  cmd_wrk+cmd_wrk_url
                 run('echo '+cmd+' > command')
                 run('at now + 2 minutes < command')
 
 @roles('router')
-def run_exp_router():
+def run_exp_router(exp,mixed,exp_no,duration,ip):
 	"""Router background(shared) traffic"""
-	if EXP in ['ipip','tcplp','ledbat']:
-                IP = "192.168.10.1"
+	if exp in ['ipip','tcplp','ledbat']:
+                exp = "192.168.10.1"
 	with cd('/home/xarokk/manos/wrk2'):
-                cmd_wrk = ' ./wrk -t1 -c25 -d'+DURATION+' -R25'
-                cmd_wrk_url = ' http://'+IP+'/004Mb.html '
+                cmd_wrk = ' ./wrk -t1 -c25 -d'+duration+' -R25'
+                cmd_wrk_url = ' http://'+ip+'/004Mb.html '
                 cmd =  cmd_wrk+cmd_wrk_url
                 run('echo '+cmd+' > command')
                 run('at now + 2 minutes < command')
 
 def run_exp():
 	"""Experiment traffic and background traffic from client"""
-	EXP = raw_input('Exp name?')
-	MIXED = raw_input('mixed?(mix/no)')
-	EXP_NO = raw_input('Exp number?')
+	exp = raw_input('Exp name?')
+	mixed = raw_input('mixed?(mix/no)')
+	exp_no = raw_input('Exp number?')
 	#FILE_SIZE = raw_input('File size? (1Mb)')
-	DURATION = raw_input('Duration? (20s)')
-	IP = "147.83.118.124"
-	execute(run_exp_client)
-	execute(run_exp_client2)
+	duration = raw_input('Duration? (20s)')
+	ip = "147.83.118.124"
+	execute(run_exp_client,exp,mixed,exp_no,duration,ip)
+	execute(run_exp_client2,exp,mixed,exp_no,duration,ip)
 
 def setup_nat(inface,outface):
 	sudo('iptables -t nat -A POSTROUTING -o '+outface+' -j MASQUERADE')
@@ -198,4 +198,3 @@ def restore_nat():
 def sync():
 	"""Sync exp result folders from client to router"""
 	run('rsync -rz user@192.168.240.2:~/manos/wrk2/exps /home/xarokk/manos/.')
-
