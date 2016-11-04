@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 from fabric.api import env, run, local, roles, execute, sudo, warn_only
 from fabric.context_managers import cd
-from time import sleep
+import time
 #from datetime import datetime as dt
 ##HOUR = datetime.timedelta(minutes=2).now().time().strftime('%H%M')
 ##EXP_HOUR = (datetime.timedelta(minutes=2)+datetime.datetime.now()).time().strftime('%H%M') 
 
 clears = ['clear_codel','clear_ipip','clear_sfq','clear_tcplp']
 setups = ['setup_codel','setup_ipip','setup_sfq','setup_tcplp']
-exps = ['run_exp']
+exps = ['run_exp','run_exp_client']
 __all__ =  clears+setups+exps+['sync']
 
 
