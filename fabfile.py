@@ -134,6 +134,7 @@ def clear_tcplp():
 
 @roles('client')
 def run_exp_client():
+	"""Client monitored traffic experiment"""
 	if EXP in ['ipip','tcplp','ledbat']:
 		IP = "192.168.10.1"
 	with cd('/home/user/manos/wrk2'):
@@ -146,6 +147,7 @@ def run_exp_client():
 
 @roles('client')
 def run_exp_client2():
+	"""Client background(shared) traffic"""
 	if EXP in ['ipip','tcplp','ledbat']:
                 IP = "192.168.10.1"
         with cd('/home/user/manos/wrk2'):
@@ -157,6 +159,7 @@ def run_exp_client2():
 
 @roles('router')
 def run_exp_router():
+	"""Router background(shared) traffic"""
 	if EXP in ['ipip','tcplp','ledbat']:
                 IP = "192.168.10.1"
 	with cd('/home/xarokk/manos/wrk2'):
@@ -167,6 +170,7 @@ def run_exp_router():
                 run('at now + 2 minutes < command')
 
 def run_exp():
+	"""Experiment traffic and background traffic from client"""
 	EXP = raw_input('Exp name?')
 	MIXED = raw_input('mixed?(mix/no)')
 	EXP_NO = raw_input('Exp number?')
