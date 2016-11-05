@@ -8,8 +8,9 @@ import time
 
 clears = ['clear_codel','clear_ipip','clear_sfq','clear_tcplp']
 setups = ['setup_codel','setup_ipip','setup_sfq','setup_tcplp']
+helpers = ['restore_nat','delete_nat']
 exps = ['run_exp']
-__all__ =  clears+setups+exps+['sync']
+__all__ =  clears+setups+exps+['sync'] + helpers
 
 
 env.key_filename = '/home/xarokk/.ssh/exp'
@@ -50,10 +51,10 @@ def setup_ipip_server():
 
 @roles('router')
 def setup_ipip_router():
-	execute(clear_nat,inface='enx00e04c534458',outface='enp0s25')
+	#execute(clear_nat,inface='enx00e04c534458',outface='enp0s25')
 	with cd('roc/tunneling/'):
                 sudo('./ipip-client.sh')
-	execute(setup_nat,inface='enx00e04c534458',outface='ipiptun1')
+	execute(setup_nat_8080,inface='enx00e04c534458',outface='ipiptun1')
 
 def setup_ipip():
 	execute(setup_ipip_router)
@@ -61,9 +62,9 @@ def setup_ipip():
 
 @roles('router')
 def clear_ipip_router():
-	execute(clear_nat,inface='enx00e04c534458',outface='ipiptun1')
+	execute(clear_nat_8080,inface='enx00e04c534458',outface='ipiptun1')
 	sudo('ip tun del ipiptun1')
-	execute(setup_nat,inface='enx00e04c534458',outface='enp0s25')
+	#execute(setup_nat,inface='enx00e04c534458',outface='enp0s25')
 
 @roles('server')
 def clear_ipip_server():
@@ -108,8 +109,8 @@ def setup_tcplp_router():
 		local('sudo screen -ls')
         #sudo('sudo ifconfig -a')
         run('sudo ifconfig tcplp 192.168.10.2/24 up')
-	execute(clear_nat,inface='enx00e04c534458',outface='enp0s25')
-	execute(setup_nat,inface='enx00e04c534458',outface='tcplp')
+	#execute(clear_nat,inface='enx00e04c534458',outface='enp0s25')
+	execute(setup_nat_8080,inface='enx00e04c534458',outface='tcplp')
 
 def setup_tcplp():
 	execute(setup_tcplp_server)
@@ -119,7 +120,7 @@ def setup_tcplp():
 def clear_tcplp_router():
 	sudo('ifconfig tcplp down')
 	sudo('sudo screen -X -S tcplp quit')
-        execute(clear_nat,inface='enx00e04c534458',outface='tcplp')
+        execute(clear_nat_8080,inface='enx00e04c534458',outface='tcplp')
 	execute(setup_nat,inface='enx00e04c534458',outface='enp0s25')
 
 
@@ -135,36 +136,41 @@ def clear_tcplp():
 @roles('client')
 def run_exp_client(exp,mixed,exp_no,duration,ip):
 	"""Client monitored traffic experiment"""
-	if exp in ['ipip','tcplp','ledbat']:
-		ip = "192.168.10.1"
-	with cd('/home/user/manos/wrk2'):
+	#if exp in ['ipip','tcplp','ledbat']:
+	#	ip = "192.168.10.1"
+	with cd('/home/user/manos/primary/wrk2'):
                 cmd_env = 'env dir='+exp+' num='+exp_no+' mixed='+mixed+' '
-                cmd_wrk = ' ./wrk -t1 -c5 -d'+duration+' -R5 --latency --script scripts/report.lua '
+                cmd_wrk = ' ./wrk -t1 -c5 -d'+duration+' -R5 --script scripts/report.lua '
 		cmd_wrk_url = ' http://'+ip+'/02Mb.html '
 		cmd =  cmd_env+cmd_wrk+cmd_wrk_url
 		run('echo '+cmd+' > command')
-		run('at now + 2 minutes < command')
+		run('at now + 1 minutes < command')
 
 @roles('client')
 def run_exp_client2(exp,mixed,exp_no,duration,ip):
 	"""Client background(shared) traffic"""
+	port = '80'
 	if exp in ['ipip','tcplp','ledbat']:
                 ip = "192.168.10.1"
-        with cd('/home/user/manos/wrk2'):
-		cmd_wrk = ' ./wrk -t1 -c25 -d'+duration+' -R25'
-                cmd_wrk_url = ' http://'+ip+'/004Mb.html '
-                cmd =  cmd_wrk+cmd_wrk_url
+		port = '8080'
+        with cd('/home/user/manos/secondary/wrk2'):
+                cmd_env = 'env dir='+exp+' num='+exp_no+' mixed='+mixed+' '
+		cmd_wrk = ' ./wrk -t1 -c25 -d'+duration+' -R25 --script scripts/report.lua'
+                cmd_wrk_url = ' http://'+ip+':'+port+'/004Mb.html '
+                cmd =  cmd_env+cmd_wrk+cmd_wrk_url
                 run('echo '+cmd+' > command')
-                run('at now + 2 minutes < command')
+                run('at now + 1 minutes < command')
 
 @roles('router')
 def run_exp_router(exp,mixed,exp_no,duration,ip):
 	"""Router background(shared) traffic"""
+	port = '80'
 	if exp in ['ipip','tcplp','ledbat']:
                 exp = "192.168.10.1"
+		port = '8080'
 	with cd('/home/xarokk/manos/wrk2'):
                 cmd_wrk = ' ./wrk -t1 -c25 -d'+duration+' -R25'
-                cmd_wrk_url = ' http://'+ip+'/004Mb.html '
+                cmd_wrk_url = ' http://'+ip+':'+port+'/004Mb.html '
                 cmd =  cmd_wrk+cmd_wrk_url
                 run('echo '+cmd+' > command')
                 run('at now + 2 minutes < command')
@@ -184,18 +190,37 @@ def run_exp():
 def setup_nat(inface,outface):
 	sudo('iptables -t nat -A POSTROUTING -o '+outface+' -j MASQUERADE')
 	sudo('iptables -A FORWARD -i '+outface+' -o '+inface+' -m state --state RELATED,ESTABLISHED -j ACCEPT')
-	sudo('iptables -A FORWARD -i '+inface+' -o '+outface+' -j ACCEPT')
+	sudo('iptables -A FORWARD -i '+inface+' -p tcp --dport 80 -o '+outface+' -j ACCEPT')
+
+
+def setup_nat_8080(inface,outface):
+        sudo('iptables -t nat -A POSTROUTING -o '+outface+' -j MASQUERADE')
+	sudo('iptables -A FORWARD -i '+outface+' -o '+inface+' -m state --state RELATED,ESTABLISHED -j ACCEPT')
+        sudo('iptables -A FORWARD -i '+inface+' -p tcp --dport 8080 -o '+outface+' -j ACCEPT')
+
 
 def clear_nat(inface,outface):
 	sudo('iptables -t nat -D POSTROUTING -o '+outface+' -j MASQUERADE')
         sudo('iptables -D FORWARD -i '+outface+' -o '+inface+' -m state --state RELATED,ESTABLISHED -j ACCEPT')
-        sudo('iptables -D FORWARD -i '+inface+' -o '+outface+' -j ACCEPT')
+        sudo('iptables -D FORWARD -i '+inface+' -p tcp --dport 80 -o '+outface+' -j ACCEPT')
+
+def clear_nat_8080(inface,outface):
+        sudo('iptables -t nat -D POSTROUTING -o '+outface+' -j MASQUERADE')
+        sudo('iptables -D FORWARD -i '+outface+' -o '+inface+' -m state --state RELATED,ESTABLISHED -j ACCEPT')
+        sudo('iptables -D FORWARD -i '+inface+' -p tcp --dport 8080 -o '+outface+' -j ACCEPT')
 
 @roles('router')
 def restore_nat():
 	execute(setup_nat,inface='enx00e04c534458',outface='enp0s25')
 
 @roles('router')
+def delete_nat():
+	execute(clear_nat,inface='enx00e04c534458',outface='enp0s25')
+@roles('router')
 def sync():
 	"""Sync exp result folders from client to router"""
-	run('rsync -rz user@192.168.240.2:~/manos/wrk2/exps /home/xarokk/manos/.')
+	sudo("iptables-save > iptables.rules")
+	sudo("iptables -F")
+	run('rsync -rz user@192.168.240.2:~/manos/primary/wrk2/exps /home/xarokk/manos/.')
+	run('rsync -rz user@192.168.240.2:~/manos/secondary/wrk2/exps /home/xarokk/manos/.')
+	sudo("iptables-restore < iptables.rules")
