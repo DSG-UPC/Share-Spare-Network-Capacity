@@ -6,7 +6,7 @@
 #
 
 TC=/sbin/tc
-IF=eno1		    # Interface 
+IF=enx00e04c534458		    # Interface 
 
 DNLD=1.72mbit          # DOWNLOAD Limit
 LIM1=1mbit          # for each class
@@ -24,9 +24,12 @@ start() {
     $TC qdisc add dev $IF parent 1:20 handle 20: sfq perturb 10
     $TC qdisc add dev $IF parent 1:30 handle 30: sfq perturb 10
 
-    U32="tc filter add dev $IF protocol ip parent 1:0 prio 1 u32"
-    $U32 match ip dst 0.0.0.0/0 flowid 1:10
-    $U32 match ip dst 0.0.0.0/0 flowid 1:20
+    U32_1="tc filter add dev $IF protocol ip parent 1:0 prio 1 u32"
+    U32_2="tc filter add dev $IF protocol ip parent 1:0 prio 2 u32"
+#    $U32 match ip dst 0.0.0.0/0 flowid 1:10
+    $U32_2 match ip sport 8080 0xffff flowid 1:10
+#    $U32 match ip dst 0.0.0.0/0 flowid 1:20
+    $U32_1 match ip sport 80 0xffff flowid 1:20
     show
 }
 
