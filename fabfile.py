@@ -2,13 +2,15 @@
 from fabric.api import env, run, local, roles, execute, sudo, warn_only
 from fabric.context_managers import cd
 import time
+import help
+import sys,getopt
 #from datetime import datetime as dt
 ##HOUR = datetime.timedelta(minutes=2).now().time().strftime('%H%M')
 ##EXP_HOUR = (datetime.timedelta(minutes=2)+datetime.datetime.now()).time().strftime('%H%M') 
 
-clears = ['clear_codel','clear_ipip','clear_sfq','clear_tcplp']
-setups = ['setup_codel','setup_ipip','setup_sfq','setup_tcplp']
-helpers = ['restore_nat','delete_nat']
+clears = ['clear_codel','clear_ipip','clear_sfq','clear_tcplp','clear_tcpvegas','clear_borrowing']
+setups = ['setup_codel','setup_ipip','setup_sfq','setup_tcplp','setup_tcpvegas','setup_borrowing']
+helpers = ['restore_nat','delete_nat', 'setup_limit','clear_limit']
 exps = ['run_exp']
 __all__ =  clears+setups+exps+['sync'] + helpers
 
@@ -18,9 +20,10 @@ env.user = 'user'
 
 env.roledefs = {
 	'server':['xarokk2@147.83.118.124'],
-	'client':['user@192.168.240.2'],
+	'client':['xarokk1@192.168.240.2'],
 	'router':['xarokk@147.83.118.126']
 }
+
 
 @roles('router')
 def now():
@@ -85,6 +88,16 @@ def clear_codel():
                 sudo('./tc_codel.bash stop')
 
 @roles('router')
+def setup_borrowing():
+        with cd('roc/tunneling/'):
+                sudo('./tc_borrowing.bash start')
+
+@roles('router')
+def clear_borrowing():
+        with cd('roc/tunneling/'):
+                sudo('./tc_borrowing.bash stop')
+
+@roles('router')
 def setup_sfq():
         with cd('roc/tunneling/'):
                 sudo('./tc_sfq.bash start')
@@ -121,7 +134,7 @@ def clear_tcplp_router():
 	sudo('ifconfig tcplp down')
 	sudo('sudo screen -X -S tcplp quit')
         execute(clear_nat_8080,inface='enx00e04c534458',outface='tcplp')
-	execute(setup_nat,inface='enx00e04c534458',outface='enp0s25')
+	#execute(setup_nat,inface='enx00e04c534458',outface='enp0s25')
 
 
 @roles('server')
@@ -133,39 +146,83 @@ def clear_tcplp():
         execute(clear_tcplp_router)
         execute(clear_tcplp_server)
 
+
+@roles('server')
+def setup_tcpvegas_server():
+        with cd('roc/tunneling/tcp_vegas'):
+                sudo('screen -S tcpvegas -d -m ./simpletun_tcpvegas -i tcpvegas -s')
+        sudo('ifconfig tcpvegas 192.168.10.1/24 up')
+
+@roles('router')
+def setup_tcpvegas_router():
+        #sudo('screen -wipe')
+        with cd('roc/tunneling/tcp_vegas'):
+                run('sudo screen -S tcpvegas -d -m ./simpletun_tcpvegas -i tcpvegas -c 147.83.118.124')
+        with warn_only():
+                local('sudo screen -ls')
+        #sudo('sudo ifconfig -a')
+        run('sudo ifconfig tcpvegas 192.168.10.2/24 up')
+        #execute(clear_nat,inface='enx00e04c534458',outface='enp0s25')
+        execute(setup_nat_8080,inface='enx00e04c534458',outface='tcpvegas')
+
+def setup_tcpvegas():
+        execute(setup_tcpvegas_server)
+        execute(setup_tcpvegas_router)
+
+@roles('router')
+def clear_tcpvegas_router():
+        sudo('ifconfig tcpvegas down')
+        sudo('sudo screen -X -S tcpvegas quit')
+        execute(clear_nat_8080,inface='enx00e04c534458',outface='tcpvegas')
+        #execute(setup_nat,inface='enx00e04c534458',outface='enp0s25')
+
+
+@roles('server')
+def clear_tcpvegas_server():
+        sudo('ifconfig tcpvegas down')
+        sudo('sudo screen -X -S tcpvegas quit')
+
+
+def clear_tcpvegas():
+        execute(clear_tcpvegas_router)
+        execute(clear_tcpvegas_server)
+
+
 @roles('client')
 def run_exp_client(exp,mixed,exp_no,duration,ip):
 	"""Client monitored traffic experiment"""
-	#if exp in ['ipip','tcplp','ledbat']:
+	#if exp in ['tcpvegas']:
 	#	ip = "192.168.10.1"
-	with cd('/home/user/manos/primary/wrk2'):
+	with cd('/home/xarokk1/manos/primary/wrk2'):
                 cmd_env = 'env dir='+exp+' num='+exp_no+' mixed='+mixed+' '
                 cmd_wrk = ' ./wrk -t1 -c5 -d'+duration+' -R5 --script scripts/report.lua '
 		cmd_wrk_url = ' http://'+ip+'/02Mb.html '
 		cmd =  cmd_env+cmd_wrk+cmd_wrk_url
 		run('echo '+cmd+' > command')
-		run('at now + 1 minutes < command')
+		run('at now + 2 minutes < command')
 
 @roles('client')
 def run_exp_client2(exp,mixed,exp_no,duration,ip):
 	"""Client background(shared) traffic"""
 	port = '80'
-	if exp in ['ipip','tcplp','ledbat']:
+	if exp in ['ipip','tcplp','ledbat','tcpvegas']:
                 ip = "192.168.10.1"
 		port = '8080'
-        with cd('/home/user/manos/secondary/wrk2'):
+	elif exp in ['borrowing']:
+		port = '8080'
+        with cd('/home/xarokk1/manos/secondary/wrk2'):
                 cmd_env = 'env dir='+exp+' num='+exp_no+' mixed='+mixed+' '
 		cmd_wrk = ' ./wrk -t1 -c25 -d'+duration+' -R25 --script scripts/report.lua'
                 cmd_wrk_url = ' http://'+ip+':'+port+'/004Mb.html '
                 cmd =  cmd_env+cmd_wrk+cmd_wrk_url
                 run('echo '+cmd+' > command')
-                run('at now + 1 minutes < command')
+                run('at now + 2 minutes < command')
 
 @roles('router')
 def run_exp_router(exp,mixed,exp_no,duration,ip):
 	"""Router background(shared) traffic"""
 	port = '80'
-	if exp in ['ipip','tcplp','ledbat']:
+	if exp in ['ipip','tcplp','ledbat','tcpvegas']:
                 exp = "192.168.10.1"
 		port = '8080'
 	with cd('/home/xarokk/manos/wrk2'):
@@ -175,13 +232,13 @@ def run_exp_router(exp,mixed,exp_no,duration,ip):
                 run('echo '+cmd+' > command')
                 run('at now + 2 minutes < command')
 
-def run_exp():
+def run_exp(exp,mixed,exp_no,duration):
 	"""Experiment traffic and background traffic from client, if mix chosen"""
-	exp = raw_input('Exp name?')
-	mixed = raw_input('mixed?(mix/no)')
-	exp_no = raw_input('Exp number?')
-	#FILE_SIZE = raw_input('File size? (1Mb)')
-	duration = raw_input('Duration? (20s)')
+	#exp = raw_input('Exp name?')
+	#mixed = raw_input('mixed?(mix/no)')
+	#exp_no = raw_input('Exp number?')
+	##FILE_SIZE = raw_input('File size? (1Mb)')
+	#duration = raw_input('Duration? (20s)')
 	ip = "147.83.118.124"
 	execute(run_exp_client,exp,mixed,exp_no,duration,ip)
 	if mixed == 'mix':
@@ -216,11 +273,21 @@ def restore_nat():
 @roles('router')
 def delete_nat():
 	execute(clear_nat,inface='enx00e04c534458',outface='enp0s25')
+
+
+def setup_limit():
+	 with cd('roc/tunneling/'):
+                sudo('./tc_bandwidth_'+env.roles[0]+'.bash start')	
+
+def clear_limit():
+         with cd('roc/tunneling/'):
+                sudo('./tc_bandwidth_'+env.roles[0]+'.bash stop')
+
 @roles('router')
 def sync():
 	"""Sync exp result folders from client to router"""
 	sudo("iptables-save > iptables.rules")
 	sudo("iptables -F")
-	run('rsync -rz user@192.168.240.2:~/manos/primary/wrk2/exps /home/xarokk/manos/.')
-	run('rsync -rz user@192.168.240.2:~/manos/secondary/wrk2/exps /home/xarokk/manos/.')
+	run('eval $(ssh-agent) && ssh-add ~/.ssh/exp && rsync -rz xarokk1@192.168.240.2:~/manos/primary/wrk2/exps /home/xarokk/manos/.')
+	run('rsync -rz xarokk1@192.168.240.2:~/manos/secondary/wrk2/exps /home/xarokk/manos/.')
 	sudo("iptables-restore < iptables.rules")
