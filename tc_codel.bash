@@ -6,10 +6,10 @@
 #
 
 TC=/sbin/tc
-IF=enx00e04c534458		    # Interface 
+IF=enp0s25		    # Interface 
  
 start() {
-    $TC qdisc add dev $IF root fq_codel
+   $TC qdisc add dev $IF root fq_codel limit 300
     show
 }
 
