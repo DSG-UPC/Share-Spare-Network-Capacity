@@ -6,7 +6,7 @@
 #
 
 TC=/sbin/tc
-IF=enp0s25		    # Interface 
+IF=enx00e04c534458		    # Interface 
 DNLD=1.72mbit 
 
 start() {
