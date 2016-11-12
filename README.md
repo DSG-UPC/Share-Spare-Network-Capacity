@@ -1,5 +1,6 @@
 # Experiments with fab
 Fab is run the router between the client and the server.
+It depends on local router info so it can run only there for the moment. Specifically inside the directory ``home/xarokk/roc/tunneling``.
 As currently configured fab support the following commands:
 
     xarokk@Cellsim:~/roc/tunneling$ fab --list
@@ -69,7 +70,7 @@ Use command with the corresponding arguments and wait for 3 mins until the exper
     xarokk@Cellsim:~/roc/tunneling$ fab run_exp:exp=ipip,mixed=mix,expno=1,duration=60s; sleep 3m
   
 ## Sync Experiments
-It needs to be run after one or all the experiment to put the data in the router in the folder /home/xarokk/manos/exps
+It needs to be run after one or all the experiment to put the data in the router in the folder ``/home/xarokk/manos/exps``
 You need to provide the usual password.
 
     xarokk@Cellsim:~/roc/tunneling$ fab sync
@@ -99,3 +100,15 @@ Clear limit in server of router withe ``clear_limit`` command using role ``route
 
     Done.
     Disconnecting from xarokk2@147.83.118.124... done.
+
+## Plotting
+If the results are synced locally in anyway from the directory ``/home/xarokk/manos/exps`` then use can used the srcipt plot.py to generate results but it needs customization for considering only new results. The script should be located in the folder where the experiment folders are. For example:
+
+        manos@laptop:~/CSCWD/exps$ ls
+        baseline                     borrowing_router_codel_1     codel                 sfq_router
+        baseline_router              borrowing_router_codel_both  codel_router          sfq_router_nodelay
+        borrowing                    borrowing_router_sfq_1       codel_router_nodelay  tcplp
+        borrowing_codel_1_router     borrowing_router_sfq_both    ipip                  tcplp_router
+        borrowing_codel_both         borrowing_sfq_1_router       ipip_router           tcpvegas
+        borrowing_codel_both_router  borrowing_sfq_both           plot.py               tcpvegas_router
+        borrowing_router             borrowing_sfq_both_router    sfq                   tunneling
