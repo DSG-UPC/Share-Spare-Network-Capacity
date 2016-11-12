@@ -57,6 +57,7 @@ def setup_ipip_router():
 	#execute(clear_nat,inface='enx00e04c534458',outface='enp0s25')
 	with cd('roc/tunneling/'):
                 sudo('./ipip-client.sh')
+	execute(clear_nat_8080,inface='enx00e04c534458',outface='enp0s25')
 	execute(setup_nat_8080,inface='enx00e04c534458',outface='ipiptun1')
 
 def setup_ipip():
@@ -66,6 +67,7 @@ def setup_ipip():
 @roles('router')
 def clear_ipip_router():
 	execute(clear_nat_8080,inface='enx00e04c534458',outface='ipiptun1')
+	execute(setup_nat_8080,inface='enx00e04c534458',outface='enp0s25')	
 	sudo('ip tun del ipiptun1')
 	#execute(setup_nat,inface='enx00e04c534458',outface='enp0s25')
 
@@ -122,7 +124,7 @@ def setup_tcplp_router():
 		local('sudo screen -ls')
         #sudo('sudo ifconfig -a')
         run('sudo ifconfig tcplp 192.168.10.2/24 up')
-	#execute(clear_nat,inface='enx00e04c534458',outface='enp0s25')
+	execute(clear_nat_8080,inface='enx00e04c534458',outface='enp0s25')
 	execute(setup_nat_8080,inface='enx00e04c534458',outface='tcplp')
 
 def setup_tcplp():
@@ -134,7 +136,7 @@ def clear_tcplp_router():
 	sudo('ifconfig tcplp down')
 	sudo('sudo screen -X -S tcplp quit')
         execute(clear_nat_8080,inface='enx00e04c534458',outface='tcplp')
-	#execute(setup_nat,inface='enx00e04c534458',outface='enp0s25')
+	execute(setup_nat_8080,inface='enx00e04c534458',outface='enp0s25')
 
 
 @roles('server')
@@ -162,7 +164,7 @@ def setup_tcpvegas_router():
                 local('sudo screen -ls')
         #sudo('sudo ifconfig -a')
         run('sudo ifconfig tcpvegas 192.168.10.2/24 up')
-        #execute(clear_nat,inface='enx00e04c534458',outface='enp0s25')
+        execute(clear_nat_8080,inface='enx00e04c534458',outface='enp0s25')
         execute(setup_nat_8080,inface='enx00e04c534458',outface='tcpvegas')
 
 def setup_tcpvegas():
@@ -174,7 +176,7 @@ def clear_tcpvegas_router():
         sudo('ifconfig tcpvegas down')
         sudo('sudo screen -X -S tcpvegas quit')
         execute(clear_nat_8080,inface='enx00e04c534458',outface='tcpvegas')
-        #execute(setup_nat,inface='enx00e04c534458',outface='enp0s25')
+        execute(setup_nat_8080,inface='enx00e04c534458',outface='enp0s25')
 
 
 @roles('server')
@@ -204,12 +206,12 @@ def run_exp_client(exp,mixed,exp_no,duration,ip):
 @roles('client')
 def run_exp_client2(exp,mixed,exp_no,duration,ip):
 	"""Client background(shared) traffic"""
-	port = '80'
-	if exp in ['ipip','tcplp','ledbat','tcpvegas']:
+	port = '8080'
+	if exp in ['ipip','tcplp','ledbat','tcpvegas','ipip_router','tcplp_router','tcpvegas_router','ledbat_router']:
                 ip = "192.168.10.1"
-		port = '8080'
-	elif exp in ['borrowing']:
-		port = '8080'
+		#port = '8080'
+	#elif exp in ['borrowing']:
+	#	port = '8080'
         with cd('/home/xarokk1/manos/secondary/wrk2'):
                 cmd_env = 'env dir='+exp+' num='+exp_no+' mixed='+mixed+' '
 		cmd_wrk = ' ./wrk -t1 -c25 -d'+duration+' -R25 --script scripts/report.lua'
@@ -221,7 +223,7 @@ def run_exp_client2(exp,mixed,exp_no,duration,ip):
 @roles('router')
 def run_exp_router(exp,mixed,exp_no,duration,ip):
 	"""Router background(shared) traffic"""
-	port = '80'
+	port = '8080'
 	if exp in ['ipip','tcplp','ledbat','tcpvegas']:
                 exp = "192.168.10.1"
 		port = '8080'
@@ -269,10 +271,12 @@ def clear_nat_8080(inface,outface):
 @roles('router')
 def restore_nat():
 	execute(setup_nat,inface='enx00e04c534458',outface='enp0s25')
+	execute(setup_nat_8080,inface='enx00e04c534458',outface='enp0s25')
 
 @roles('router')
 def delete_nat():
 	execute(clear_nat,inface='enx00e04c534458',outface='enp0s25')
+	execute(clear_nat_8080,inface='enx00e04c534458',outface='enp0s25')
 
 
 def setup_limit():

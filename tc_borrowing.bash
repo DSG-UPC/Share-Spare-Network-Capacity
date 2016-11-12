@@ -18,9 +18,9 @@ start() {
     $TC class add dev $IF parent 1: classid 1:1 htb rate $DNLD burst 15k
 
     $TC class add dev $IF parent 1:1 classid 1:10 htb rate $LIM1 burst 15k
-    #$TC class add dev $IF parent 1:1 classid 1:20 htb rate $LIM2 ceil $CEIL burst 15k
+    $TC class add dev $IF parent 1:1 classid 1:20 htb rate $LIM2 ceil $CEIL burst 15k
     $TC class add dev $IF parent 1:1 classid 1:30 htb rate 1kbit ceil $CEIL burst 15k
-    $TC qdisc add dev $IF parent 1:10 handle 10: sfq perturb 10
+    #$TC qdisc add dev $IF parent 1:10 handle 10: sfq perturb 10
     #$TC qdisc add dev $IF parent 1:20 handle 20: sfq perturb 10
  #   $TC qdisc add dev $IF parent 1:30 handle 30: sfq perturb 10
 
@@ -29,8 +29,8 @@ start() {
     $U32 match ip sport 80 0xffff flowid 1:10
     $U32 match ip dport 80 0xffff flowid 1:10
 #    $U32 match ip dst 0.0.0.0/0 flowid 1:20
-#    $U32 match ip sport 8080 0xffff flowid 1:30
-#    $U32 match ip dport 8080 0xffff flowid 1:30
+    $U32 match ip sport 8080 0xffff flowid 1:20
+    $U32 match ip dport 8080 0xffff flowid 1:20
     show
 }
 

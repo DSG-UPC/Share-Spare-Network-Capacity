@@ -14,7 +14,7 @@
 #  To get the byte figure from bits, divide the number by 8 bit
 #
 TC=/sbin/tc
-IF=enx00e04c534458		    # Interface 
+IF=eno1		    # Interface 
 
 # Modelado basado en [10]
 # Download throughput (Mbps), Upload throughput (Mbps) andLatency - RTT (ms)
@@ -38,11 +38,15 @@ start() {
 
 # https://linux.die.net/man/8/tc-htb
 
-# Thoughtput and delay
-   $TC qdisc add dev $IF root handle 1: htb
+# Thoughtput
+   $TC qdisc add dev $IF root handle 1: htb default 1
    $TC class add dev $IF parent 1:0 classid 1:1 htb  rate $DNLD
-   $TC qdisc add dev $IF parent 1:1 handle 10:0 netem  delay $LATENCY
-   $TC filter add dev $IF parent 1: protocol ip prio 1 u32 match ip dst 0.0.0.0/0 flowid 1:1
+
+# Thoughtput and delay
+#   $TC qdisc add dev $IF root handle 1: htb
+#   $TC class add dev $IF parent 1:0 classid 1:1 htb  rate $DNLD
+#   $TC qdisc add dev $IF parent 1:1 handle 10:0 netem  delay $LATENCY
+#   $TC filter add dev $IF parent 1: protocol ip prio 1 u32 match ip dst 0.0.0.0/0 flowid 1:1
 }
 
 stop() {
