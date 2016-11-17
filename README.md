@@ -31,6 +31,7 @@ When running an experiment the parameters are:
 * ``mixed``: ``mix`` or ``no`` dependind if you want just the primary traffic or both primary and secondary 
 * ``exp_no``: The number of the experiment. For new set of experiments is good to give a name in front. Like ``delay_1``
 * ``duration``: the duration of the experiments. Typically used ``60s``
+* ``delay``(optional): '' or ``delay``  depending if you want the primary traffic to have a random delay (10-50ms) between requests or not. Default is ``delay``
 
 
 # Experiment workflow
@@ -68,7 +69,8 @@ Use the existing commands. For example:
 Use command with the corresponding arguments and wait for 3 mins until the experiment is done for sure:
 
     xarokk@Cellsim:~/roc/tunneling$ fab run_exp:exp=ipip,mixed=mix,expno=1,duration=60s; sleep 3m
-  
+These experiments will be performed with
+
 ## Sync Experiments
 It needs to be run after one or all the experiment to put the data in the router in the folder ``/home/xarokk/manos/exps``
 You need to provide the usual password.
