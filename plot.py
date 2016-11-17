@@ -21,12 +21,18 @@ mpl.rcParams['axes.titlesize'] = label_size
 plt.rc('legend',**{'fontsize':15})
 
 
+main_dir = os.path.join(os.getcwd(),'exps')
+limit = '_router'
+#limit = '_server'
+delay = '_'
+#delay = '_delay'
+
 
 #dirs = ['ipip','baseline','codel', 'sfq', 'tcplp','tcpvegas','borrowing']
-server_dirs = ['ipip','baseline','codel', 'tcplp','tcpvegas','borrowing','sfq']
-router_dirs = ['ipip_router','tcplp_router','tcpvegas_router','codel_router','sfq_router','baseline_router','codel_router_nodelay','sfq_router_nodelay','borrowing_router']
-borrowing_dirs= ['borrowing_sfq_both_router','borrowing_codel_both_router','borrowing_sfq_both','borrowing_codel_both']
-dirs = server_dirs+router_dirs+borrowing_dirs
+dirs = ['ipip','baseline','codel', 'tcplp','tcpvegas','borrowing','sfq']
+#router_dirs = ['ipip_router','tcplp_router','tcpvegas_router','codel_router','sfq_router','baseline_router','codel_router_nodelay','sfq_router_nodelay','borrowing_router']
+#borrowing_dirs= ['borrowing_sfq_both_router','borrowing_codel_both_router','borrowing_sfq_both','borrowing_codel_both']
+#dirs = server_dirs+router_dirs+borrowing_dirs
 #dirs = ['baseline', 'tcplp']
 mixed = 'mix'
 def getECDF(df):
@@ -40,7 +46,7 @@ def parseLatencies(target='primary'):
 		latencies[dir] = []
 		latencies[dir+mixed] = []
 		#print(os.listdir(dir))
-		files = [os.path.join(os.getcwd(),dir,f) for f in os.listdir(dir) if fnmatch.fnmatch(f,'latency*'+target+'.csv')]
+		files = [os.path.join(main_dir,dir+limit+delay,f) for f in os.listdir(os.path.join(main_dir,dir+limit+delay)) if fnmatch.fnmatch(f,'latency*'+target+'.csv')]
 		#ipdb.set_trace()
 		#print files
 		for fil in files:
@@ -64,8 +70,7 @@ def parseThroughput(target):
 	for dir in dirs:
                 mix_through[dir] = {}
                 through[dir] = {}
-                print(os.listdir(dir))
-		files = [os.path.join(os.getcwd(),dir,f) for f in os.listdir(dir) if fnmatch.fnmatch(f,'summary*'+target+'.csv')]
+		files = [os.path.join(main_dir,dir+limit+delay,f) for f in os.listdir(os.path.join(main_dir,dir+limit+delay)) if fnmatch.fnmatch(f,'summary*'+target+'.csv')]
 		for fil in files:
 			df = pd.read_csv(fil,delimiter=',',names=['duration','requests','bytes'])		
 			df['throughput'] = 1.*8*df['bytes']/df['duration']
@@ -152,41 +157,10 @@ for n,i in enumerate(prim_df1.columns):
                if 'mix' in i:
                        prim_df1.rename(columns={i:i.rsplit('mix',1)[0]},inplace=True)
 prim_df1[['single','baseline','codel','sfq','ipip','tcplp','tcpvegas','borrowing']].plot.box()
-plt.ylabel('Server Primary Latency per Request (ms)')
+#plt.ylabel('Server Primary Latency per Request (ms)')
+plt.ylabel(limit+'Primary Latency per Request (ms)')
 plt.show()
 #raw_input('End')
-
-# Boxplot router primary
-prim_df.rename(columns={'baseline_router':'single_routermix'},inplace=True)
-prim_df1 = prim_df[['baseline_routermix','codel_routermix','sfq_routermix','ipip_routermix','tcplp_routermix','tcpvegas_routermix','borrowing_routermix','single_routermix']].copy()
-for n,i in enumerate(prim_df1.columns):
-               if '_routermix' in i:
-                       prim_df1.rename(columns={i:i.rsplit('_routermix',1)[0]},inplace=True)
-prim_df1[['single','baseline','codel','sfq','ipip','tcplp','tcpvegas','borrowing']].plot.box(legend=True)
-plt.ylabel('Router Primary Latency per Request(ms)')
-plt.show()
-#raw_input('End')
-
-# Boxplot router secondary
-second_df1 = second_df[['baseline_routermix','codel_routermix','sfq_routermix','ipip_routermix','tcplp_routermix','tcpvegas_routermix','borrowing_routermix']].copy()
-for n,i in enumerate(second_df1.columns):
-               if '_routermix' in i:
-                       second_df1.rename(columns={i:i.rsplit('_routermix',1)[0]},inplace=True)
-second_df1[['baseline','codel','sfq','ipip','tcplp','tcpvegas','borrowing']].plot.box()
-plt.ylabel('Router Secondary Latency per Request(ms)')
-plt.show()
-
-
-#prim_ecdfs_df[['baseline_routermix','codel_routermix','sfq_routermix']].plot(legend=True, style='o')
-#plt.xlabel('Latency per Request of primary traffic (ms)')
-#plt.ylabel('ECDF')
-#plt.xlim(10**2,10**5)
-#plt.xscale('log')
-#plt.show()
-#raw_input('End')
-
-
-
 
 # Boxplot server secondary
 second_df1 = second_df[['ipipmix','baselinemix','codelmix','tcplpmix','tcpvegasmix','borrowingmix','sfqmix']].copy()
@@ -194,7 +168,8 @@ for n,i in enumerate(second_df1.columns):
                if 'mix' in i:
                        second_df1.rename(columns={i:i.rsplit('mix',1)[0]},inplace=True)
 second_df1[['baseline','codel','sfq','ipip','tcplp','tcpvegas','borrowing']].plot.box(legend=True)
-plt.ylabel('Server Secondary Latency per Request(ms)')
+#plt.ylabel('Server Secondary Latency per Request(ms)')
+plt.ylabel(limit+' Secondary Latency per Request(ms)')
 #plt.xlabel('ECDF')
 #plt.xlim(10**2,10**5)
 #plt.xscale('log')
@@ -202,42 +177,63 @@ plt.show()
 #raw_input('End')
 
 
-# Server Primary AQM
-prim_df1 = prim_df[['baselinemix','borrowingmix','borrowing_sfq_bothmix','borrowing_codel_bothmix']].copy()
-for n,i in enumerate(prim_df1.columns):
-               if 'mix' in i:
-                       prim_df1.rename(columns={i:i.rsplit('mix',1)[0]},inplace=True)
-prim_df1[['baseline','borrowing','borrowing_sfq_both','borrowing_codel_both']].plot.box()
-plt.ylabel('Server-AQM Primary Latency per Request(ms)')
-plt.show()
+if False:
+	# Server Primary AQM
+	prim_df1 = prim_df[['baselinemix','borrowingmix','borrowing_sfq_bothmix','borrowing_codel_bothmix']].copy()
+	for n,i in enumerate(prim_df1.columns):
+	               if 'mix' in i:
+	                       prim_df1.rename(columns={i:i.rsplit('mix',1)[0]},inplace=True)
+	prim_df1[['baseline','borrowing','borrowing_sfq_both','borrowing_codel_both']].plot.box()
+	plt.ylabel('Server-AQM Primary Latency per Request(ms)')
+	plt.show()
 
-# Server Secondary AQM
-second_df1 = second_df[['baselinemix','borrowingmix','borrowing_sfq_bothmix','borrowing_codel_bothmix']].copy()
-for n,i in enumerate(second_df1.columns):
-               if 'mix' in i:
-                       second_df1.rename(columns={i:i.rsplit('mix',1)[0]},inplace=True)
-prim_df1[['baseline','borrowing','borrowing_sfq_both','borrowing_codel_both']].plot.box()
-plt.ylabel('Server-AQM Secondary Latency per Request(ms)')
-plt.show()
+	# Server Secondary AQM
+	second_df1 = second_df[['baselinemix','borrowingmix','borrowing_sfq_bothmix','borrowing_codel_bothmix']].copy()
+	for n,i in enumerate(second_df1.columns):
+	               if 'mix' in i:
+	                       second_df1.rename(columns={i:i.rsplit('mix',1)[0]},inplace=True)
+	prim_df1[['baseline','borrowing','borrowing_sfq_both','borrowing_codel_both']].plot.box()
+	plt.ylabel('Server-AQM Secondary Latency per Request(ms)')
+	plt.show()
 
+if False:
+	# Boxplot router primary
+	prim_df.rename(columns={'baseline_router':'single_routermix'},inplace=True)
+	prim_df1 = prim_df[['baseline_routermix','codel_routermix','sfq_routermix','ipip_routermix','tcplp_routermix','tcpvegas_routermix','borrowing_routermix','single_routermix']].copy()
+	for n,i in enumerate(prim_df1.columns):
+	               if '_routermix' in i:
+	                       prim_df1.rename(columns={i:i.rsplit('_routermix',1)[0]},inplace=True)
+	prim_df1[['single','baseline','codel','sfq','ipip','tcplp','tcpvegas','borrowing']].plot.box(legend=True)
+	plt.ylabel('Router Primary Latency per Request(ms)')
+	plt.show()
+	#raw_input('End')
 
-# Router Primary AQM
-prim_df1 = prim_df[['baseline_routermix','borrowing_routermix','borrowing_sfq_both_routermix','borrowing_codel_both_routermix']].copy()
-for n,i in enumerate(prim_df1.columns):
-               if '_routermix' in i:
-                       prim_df1.rename(columns={i:i.rsplit('_routermix',1)[0]},inplace=True)
-prim_df1[['baseline','borrowing','borrowing_sfq_both','borrowing_codel_both']].plot.box()
-plt.ylabel('Router-AQM Primary Latency per Request(ms)')
-plt.show()
+	# Boxplot router secondary
+	second_df1 = second_df[['baseline_routermix','codel_routermix','sfq_routermix','ipip_routermix','tcplp_routermix','tcpvegas_routermix','borrowing_routermix']].copy()
+	for n,i in enumerate(second_df1.columns):
+	               if '_routermix' in i:
+	                       second_df1.rename(columns={i:i.rsplit('_routermix',1)[0]},inplace=True)
+	second_df1[['baseline','codel','sfq','ipip','tcplp','tcpvegas','borrowing']].plot.box()
+	plt.ylabel('Router Secondary Latency per Request(ms)')
+	plt.show()
 
-# Router Secondary AQM
-second_df1 = second_df[['baseline_routermix','borrowing_routermix','borrowing_sfq_both_routermix','borrowing_codel_both_routermix']].copy()
-for n,i in enumerate(second_df1.columns):
-               if '_routermix' in i:
-                       second_df1.rename(columns={i:i.rsplit('_routermix',1)[0]},inplace=True)
-prim_df1[['baseline','borrowing','borrowing_sfq_both','borrowing_codel_both']].plot.box()
-plt.ylabel('Router-AQM Secondary Latency per Request(ms)')
-plt.show()
+	# Router Primary AQM
+	prim_df1 = prim_df[['baseline_routermix','borrowing_routermix','borrowing_sfq_both_routermix','borrowing_codel_both_routermix']].copy()
+	for n,i in enumerate(prim_df1.columns):
+	               if '_routermix' in i:
+	                       prim_df1.rename(columns={i:i.rsplit('_routermix',1)[0]},inplace=True)
+	prim_df1[['baseline','borrowing','borrowing_sfq_both','borrowing_codel_both']].plot.box()
+	plt.ylabel('Router-AQM Primary Latency per Request(ms)')
+	plt.show()
+
+	# Router Secondary AQM
+	second_df1 = second_df[['baseline_routermix','borrowing_routermix','borrowing_sfq_both_routermix','borrowing_codel_both_routermix']].copy()
+	for n,i in enumerate(second_df1.columns):
+	               if '_routermix' in i:
+	                       second_df1.rename(columns={i:i.rsplit('_routermix',1)[0]},inplace=True)
+	prim_df1[['baseline','borrowing','borrowing_sfq_both','borrowing_codel_both']].plot.box()
+	plt.ylabel('Router-AQM Secondary Latency per Request(ms)')
+	plt.show()
 
 		
 # Print single client Configs
@@ -261,20 +257,22 @@ through_df.loc['alone','tcplp'] = np.nan
 # Server Throughput
 through_df.loc[['primary','secondary'],['baseline','codel','sfq','ipip','tcplp','tcpvegas','borrowing']].plot.bar(rot=0)
 plt.axhline(y=through_df.loc['alone':].mean(axis=1).values[0],color='r',label='Single Client Throughput',ls='--')
-plt.ylabel('Server Throughput (Mbps)')
-plt.show()
-#raw_input('End')
-
-# Router Throughput
-through_df1 = through_df[['baseline_router','codel_router','sfq_router','ipip_router','tcplp_router','tcpvegas_router','borrowing_router']].copy()
-for n,i in enumerate(through_df1.columns):
-               if '_router' in i:
-                       through_df1.rename(columns={i:i.rsplit('_router',1)[0]},inplace=True)
-through_df1.loc[['primary','secondary'],['baseline','codel','sfq','ipip','tcplp','tcpvegas','borrowing']].plot.bar(rot=0)
-plt.axhline(y=through_df.loc['alone':].mean(axis=1).values[0],color='r',label='Single Client Throughput',ls='--')
-plt.ylabel('Router Throughput (Mbps)')
+#plt.ylabel('Server Throughput (Mbps)')
+plt.ylabel(limit+' Throughput (Mbps)')
 plt.show()
 raw_input('End')
+
+if False:
+	# Router Throughput
+	through_df1 = through_df[['baseline_router','codel_router','sfq_router','ipip_router','tcplp_router','tcpvegas_router','borrowing_router']].copy()
+	for n,i in enumerate(through_df1.columns):
+	               if '_router' in i:
+	                       through_df1.rename(columns={i:i.rsplit('_router',1)[0]},inplace=True)
+	through_df1.loc[['primary','secondary'],['baseline','codel','sfq','ipip','tcplp','tcpvegas','borrowing']].plot.bar(rot=0)
+	plt.axhline(y=through_df.loc['alone':].mean(axis=1).values[0],color='r',label='Single Client Throughput',ls='--')
+	plt.ylabel('Router Throughput (Mbps)')
+	plt.show()
+	raw_input('End')
 
 if False:
 	through_df.loc[['primary','secondary'],['borrowing_router_codel_both','borrowing_router_codel_1','borrowing_router','borrowing_router_sfq_both','borrowing_router_sfq_1']].plot.bar(rot=0)
