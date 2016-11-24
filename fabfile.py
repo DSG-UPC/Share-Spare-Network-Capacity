@@ -4,13 +4,14 @@ from fabric.context_managers import cd
 import time
 import help
 import sys,getopt
+import ipdb
 #from datetime import datetime as dt
 ##HOUR = datetime.timedelta(minutes=2).now().time().strftime('%H%M')
 ##EXP_HOUR = (datetime.timedelta(minutes=2)+datetime.datetime.now()).time().strftime('%H%M') 
 
 clears = ['clear_codel','clear_ipip','clear_sfq','clear_tcplp','clear_tcpvegas','clear_borrowing']
 setups = ['setup_codel','setup_ipip','setup_sfq','setup_tcplp','setup_tcpvegas','setup_borrowing']
-helpers = ['restore_nat','delete_nat', 'setup_limit','clear_limit']
+helpers = ['restore_nat','delete_nat', 'setup_limit','clear_limit','setup_nat_now','clear_nat_now']
 exps = ['run_exp']
 
 __all__ =  clears+setups+exps+['sync'] + helpers
@@ -28,7 +29,12 @@ env.roledefs = {
 
 @roles('router')
 def now():
-	execute(clear_nat,inface='enx00e04c534458',outface='enp0s25')
+	with warn_only():
+		output = run('cat /proc/sys/net/ipv4/conf/tcplp; echo $?')
+		print output.stdout[-1].strip()
+		if output.stdout[-1].strip() == "1":
+			print 'Hi'
+
 
 def server():
 	env.hosts = ['147.83.118.124']
@@ -128,12 +134,16 @@ def setup_tcplp_client():
 
 @roles('router')
 def setup_tcplp_router():
-	#sudo('screen -wipe')
-        with cd('roc/tunneling/tcp_lp'):
-                run('sudo screen -S tcplp -d -m ./simpletun_tcplp -i tcplp -c 192.168.240.2')
-	with warn_only():
-		local('sudo screen -ls')
-        #sudo('sudo ifconfig -a')
+	while True:
+                with cd('roc/tunneling/tcp_lp'):
+			run('sudo screen -S tcplp -d -m ./simpletun_tcplp -i tcplp -c 192.168.240.2')
+                with warn_only():
+                        local('sudo screen -ls')
+                        output = run('ls /proc/sys/net/ipv4/conf/tcplp; echo $?')
+                        if output.stdout[-1].strip() != '2':
+                                break
+			else:
+                                local('sudo screen -wipe')
         run('sudo ifconfig tcplp 192.168.10.1/24 up')
 	execute(clear_nat_8080,inface='enx00e04c534458',outface='enp0s25')
 	execute(setup_nat_8080,inface='tcplp',outface='enp0s25')
@@ -175,10 +185,16 @@ def setup_tcpvegas_client():
 @roles('router')
 def setup_tcpvegas_router():
         #sudo('screen -wipe')
-        with cd('roc/tunneling/tcp_vegas'):
-                run('sudo screen -S tcpvegas -d -m ./simpletun_tcpvegas -i tcpvegas -c 192.168.240.2')
-        with warn_only():
-                local('sudo screen -ls')
+	while True:
+        	with cd('roc/tunneling/tcp_vegas'):
+        	        run('sudo screen -S tcpvegas -d -m ./simpletun_tcpvegas -i tcpvegas -c 192.168.240.2')
+        	with warn_only():
+        	        local('sudo screen -ls')
+        	        output = run('ls /proc/sys/net/ipv4/conf/tcpvegas; echo $?')
+        	        if output.stdout[-1].strip() != '2':
+				break
+			else:
+				local('sudo screen -wipe')
         #sudo('sudo ifconfig -a')
         run('sudo ifconfig tcpvegas 192.168.10.1/24 up')
         execute(clear_nat_8080,inface='enx00e04c534458',outface='enp0s25')
@@ -224,20 +240,42 @@ def run_exp_client(exp,mixed,exp_no,duration,ip,delay,size):
 		cmd_wrk_url = ' http://'+ip+'/'+size+'Mb.html '
 		cmd =  cmd_env+cmd_wrk+cmd_wrk_url
 		run('echo '+cmd+' > command')
-		retrans_timeout = 'sudo timeout '+duration
-		retrans = ' /home/xarokk1/./tcpretrans > exps/'+exp+'/retrans_'+mixed+'_'+exp_no+'.log 2>&1'
+		tshark = ' tshark -Y "tcp.analysis.retransmission" -Tfields -e ip.src -e ip.dst -e tcp.port  -i enp0s25 '  
+		retrans_timeout = 'sudo timeout '+duration + tshark
+		retrans = ' > exps/'+exp+'/retrans_'+mixed+'_'+exp_no+'.log 2>&1'
 		retrans_cmd = retrans_timeout +	retrans
                 run('echo \"'+retrans_cmd+'\" > retrans_cmd')
 		run('at now + 2 minutes < command')
 		sudo('at now + 2 minutes < retrans_cmd')
+		if 'ipip' in exp:
+			tshark = ' tshark -Y "tcp.analysis.retransmission" -Tfields -e ip.src -e ip.dst -e tcp.port  -i ipiptun1'
+			retrans_timeout = 'sudo timeout '+duration + tshark
+                	retrans = ' > exps/'+exp+'/retrans_'+mixed+'_'+exp_no+'_ipiptun1.log 2>&1'
+                	retrans_cmd = retrans_timeout + retrans
+                	run('echo \"'+retrans_cmd+'\" > retrans_cmd1')
+			sudo('at now + 2 minutes < retrans_cmd1')
+		if 'tcpvegas' in exp:
+                        tshark = ' tshark -Y "tcp.analysis.retransmission" -Tfields -e ip.src -e ip.dst -e tcp.port  -i tcpvegas'
+                        retrans_timeout = 'sudo timeout '+duration + tshark
+                        retrans = ' > exps/'+exp+'/retrans_'+mixed+'_'+exp_no+'_tcpvegas.log 2>&1'
+                        retrans_cmd = retrans_timeout + retrans
+                        run('echo \"'+retrans_cmd+'\" > retrans_cmd1')
+                        sudo('at now + 2 minutes < retrans_cmd1')
+		if 'tcplp' in exp:
+                        tshark = ' tshark -Y "tcp.analysis.retransmission" -Tfields -e ip.src -e ip.dst -e tcp.port  -i tcplp'
+                        retrans_timeout = 'sudo timeout '+duration + tshark
+                        retrans = ' > exps/'+exp+'/retrans_'+mixed+'_'+exp_no+'_tcpvp.log 2>&1'
+                        retrans_cmd = retrans_timeout + retrans
+                        run('echo \"'+retrans_cmd+'\" > retrans_cmd1')
+                        sudo('at now + 2 minutes < retrans_cmd1')
 
 @roles('client')
 def run_exp_client2(exp,mixed,exp_no,duration,ip,size):
 	"""Client background(shared) traffic"""
 	port = '8080'
-	for i in ['ipip','tcplp','ledbat','tcpvegas']:
-		if i in exp:
-                	ip = "192.168.10.1"
+	#for i in ['ipip','tcplp','ledbat','tcpvegas']:
+	#	if i in exp:
+        #        	ip = "192.168.10.1"
 		#port = '8080'
 	#elif exp in ['borrowing']:
 	#	port = '8080'
@@ -245,7 +283,7 @@ def run_exp_client2(exp,mixed,exp_no,duration,ip,size):
 		with warn_only():
                         run('mkdir exps/'+exp)
                 cmd_env = 'env dir='+exp+' num='+exp_no+' mixed='+mixed+' '
-		cmd_wrk = ' ./wrk -t1 -c25 -d'+duration+' -R25 --script scripts/report.lua'
+		cmd_wrk = ' ./wrk -t1 -c25 -d'+duration+' -R25 --timeout 55s --script scripts/report.lua'
                 cmd_wrk_url = ' http://'+ip+':'+port+'/'+size+'Mb.html '
                 cmd =  cmd_env+cmd_wrk+cmd_wrk_url
                 run('echo '+cmd+' > command')
@@ -286,6 +324,20 @@ def clear_nat_8080(inface,outface):
         	sudo('iptables -t nat -D POSTROUTING -o '+outface+' -j MASQUERADE')
         	sudo('iptables -D FORWARD -i '+outface+' -p tcp --sport 8080 -o '+inface+' -m state --state RELATED,ESTABLISHED -j ACCEPT')
         	sudo('iptables -D FORWARD -i '+inface+' -p tcp --dport 8080 -o '+outface+' -j ACCEPT')
+
+
+@roles('router')
+def setup_nat_now(inface,outface):
+        sudo('iptables -t nat -A POSTROUTING -o '+outface+' -j MASQUERADE')
+	sudo('iptables -A FORWARD -i '+outface+' -o '+inface+' -m state --state RELATED,ESTABLISHED -j ACCEPT')
+        sudo('iptables -A FORWARD -i '+inface+'  -o '+outface+' -j ACCEPT')
+
+@roles('router')
+def clear_nat_now(inface,outface):
+        with warn_only():
+                sudo('iptables -t nat -D POSTROUTING -o '+outface+' -j MASQUERADE')
+		sudo('iptables -D FORWARD -i '+outface+' -o '+inface+' -m state --state RELATED,ESTABLISHED -j ACCEPT')
+                sudo('iptables -D FORWARD -i '+inface+'  -o '+outface+' -j ACCEPT')
 
 @roles('router')
 def restore_nat():
