@@ -6,16 +6,17 @@
 #
 
 TC=/sbin/tc
-IF=enp0s25		    # Interface 
+IF=enx00e04c534458		    # Interface 
  
 start() {
-   $TC qdisc add dev $IF root fq_codel limit 300
-    show
+   #$TC qdisc add dev $IF root fq_codel limit 300
+   $TC qdisc add dev $IF parent 1:1 handle 10: fq_codel limit 300
+   show
 }
 
 stop() {
 
-    $TC qdisc del dev $IF root
+    $TC qdisc del dev $IF parent 1:1 handle 10: fq_codel limit 300
 
 }
 

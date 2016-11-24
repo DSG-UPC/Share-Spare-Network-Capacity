@@ -7,13 +7,14 @@ TC=/sbin/tc
 IF=enx00e04c534458		    # Interface 
  
 start() {
-    $TC qdisc add dev $IF root sfq perturb 10
+    #$TC qdisc add dev $IF root sfq perturb 10
+    $TC qdisc add dev $IF parent 1:1 handle 10: sfq perturb 10
     show
 }
 
 stop() {
 
-    $TC qdisc del dev $IF root
+    $TC qdisc del dev $IF parent 1:1 handle 10: sfq perturb 10
 
 }
 
