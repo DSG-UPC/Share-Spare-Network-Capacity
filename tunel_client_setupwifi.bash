@@ -17,7 +17,7 @@ sudo ip route flush cache
 #sudo ip route add default via 127.0.1.1
 sudo ip route add table primary  default via 192.168.200.1
 sudo ip route add table secondary default via 192.168.10.1
-sudo iptables -t nat -A POSTROUTING -o enp0s25 -j MASQUERADE
+sudo iptables -t nat -A POSTROUTING -o wlxe894f61567de -j MASQUERADE
 sudo iptables -t nat -A POSTROUTING -o $TUNINT -j MASQUERADE
 
 #Copy other routes to the new tables
