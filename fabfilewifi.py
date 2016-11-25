@@ -57,7 +57,7 @@ def test():
 @roles('client')
 def setup_ipip_client():
 	with cd('roc/tunneling/'):
-                sudo('./ipip-server.sh')
+                sudo('./ipip-serverwifi.sh')
 		sudo('./tunel_client_setupwifi.bash ipiptun1')
 	#sudo('route del default gw 192.168.240.1 enp0s25')
 	#sudo('route add default gw 192.168.10.1')
@@ -66,7 +66,7 @@ def setup_ipip_client():
 def setup_ipip_router():
 	#execute(clear_nat,inface='enx00e04c534458',outface='enp0s25')
 	with cd('roc/tunneling/'):
-                sudo('./ipip-client.sh')
+                sudo('./ipip-clientwifi.sh')
 	execute(clear_nat_8080,inface='wlxc04a001e7636',outface='enp0s25')
 	execute(setup_nat_8080,inface='ipiptun1',outface='enp0s25')
 
@@ -173,7 +173,7 @@ def clear_tcplp_router():
 @roles('client')
 def clear_tcplp_client():
 	with cd('roc/tunneling'):
-		sudo('./tunel_client_clear.bash tcplp')
+		sudo('./tunel_client_clearwifi.bash tcplp')
 	with warn_only():
 		sudo('ifconfig tcplp down')
 		sudo('sudo screen -X -S tcplp quit')
@@ -237,7 +237,7 @@ def clear_tcpvegas_router():
 @roles('client')
 def clear_tcpvegas_client():
 	with cd('roc/tunneling'):
-                sudo('./tunel_client_clear.bash tcpvegas')
+                sudo('./tunel_client_clearwifi.bash tcpvegas')
 	with warn_only():
 		sudo('ifconfig tcpvegas down')
 		sudo('sudo screen -X -S tcpvegas quit')
@@ -362,23 +362,43 @@ def clear_nat_now(inface,outface):
                 sudo('iptables -D FORWARD -i '+inface+'  -o '+outface+' -j ACCEPT')
 
 @roles('router')
-def restore_nat():
+def restore_nat1():
 	execute(setup_nat,inface='wlxc04a001e7636',outface='enp0s25')
 	execute(setup_nat_8080,inface='wlxc04a001e7636',outface='enp0s25')
 
+@roles('client')
+def restore_route():
+	with warn_only():
+		sudo('ip route add default via 192.168.200.1')
+
+def restore_nat():
+	execute(restore_nat1)
+	execute(restore_route)
+	
+
 @roles('router')
-def delete_nat():
+def delete_nat1():
 	execute(clear_nat,inface='wlxc04a001e7636',outface='enp0s25')
 	execute(clear_nat_8080,inface='wlxc04a001e7636',outface='enp0s25')
 
 
+@roles('client')
+def delete_route():
+        with warn_only():
+                sudo('ip route del default via 192.168.200.1')
+
+def delete_nat():
+	execute(delete_nat1)
+	execute(delete_route)
+
+
 def setup_limit():
 	 with cd('roc/tunneling/'):
-                sudo('./tc_bandwidth_'+env.roles[0]+'.bash start')	
+                sudo('./tc_bandwidth_'+env.roles[0]+'wifi.bash start')	
 
 def clear_limit():
          with cd('roc/tunneling/'):
-                sudo('./tc_bandwidth_'+env.roles[0]+'.bash stop')
+                sudo('./tc_bandwidth_'+env.roles[0]+'wifi.bash stop')
 
 @roles('router')
 def sync():

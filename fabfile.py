@@ -125,8 +125,18 @@ def clear_sfq():
 
 @roles('client')
 def setup_tcplp_client():
-        with cd('roc/tunneling/tcp_lp'):
-                sudo('screen -S tcplp -d -m ./simpletun_tcplp -i tcplp -s')
+	while True:
+                with cd('roc/tunneling/tcp_lp'):
+			sudo('screen -S tcplp -d -m ./simpletun_tcplp -i tcplp -s')
+                with warn_only():
+                        sudo('screen -ls')
+                        output = run('ls /proc/sys/net/ipv4/conf/tcplp; echo $?')
+                        if output.stdout[-1].strip() != '2':
+                                break
+                        else:
+                                local('sudo screen -wipe')
+        #with cd('roc/tunneling/tcp_lp'):
+        #        sudo('screen -S tcplp -d -m ./simpletun_tcplp -i tcplp -s')
         sudo('ifconfig tcplp 192.168.10.2/24 up')
 	with cd('roc/tunneling'):
 		sudo('./tunel_client_setup.bash tcplp')
@@ -175,8 +185,20 @@ def clear_tcplp():
 
 @roles('client')
 def setup_tcpvegas_client():
-        with cd('roc/tunneling/tcp_vegas'):
-                sudo('screen -S tcpvegas -d -m ./simpletun_tcpvegas -i tcpvegas -s')
+	while True:
+                with cd('roc/tunneling/tcp_vegas'):
+			sudo('screen -S tcpvegas -d -m ./simpletun_tcpvegas -i tcpvegas -s')
+                with warn_only():
+                        sudo('screen -ls')
+                        output = run('ls /proc/sys/net/ipv4/conf/tcpvegas; echo $?')
+                        if output.stdout[-1].strip() != '2':
+                                break
+                        else:
+                                local('sudo screen -wipe')
+
+
+        #with cd('roc/tunneling/tcp_vegas'):
+        #        sudo('screen -S tcpvegas -d -m ./simpletun_tcpvegas -i tcpvegas -s')
         sudo('ifconfig tcpvegas 192.168.10.2/24 up')
 	with cd('roc/tunneling'):
 		sudo('./tunel_client_setup.bash tcpvegas')
@@ -227,7 +249,7 @@ def clear_tcpvegas():
 
 
 @roles('client')
-def run_exp_client(exp,mixed,exp_no,duration,ip,delay,size):
+def run_exp_client(exp,mixed,exp_no,duration,ip,delay,size,req1):
 	"""Client monitored traffic experiment"""
 	#if exp in ['tcpvegas']:
 	#	ip = "192.168.10.1"
@@ -236,7 +258,7 @@ def run_exp_client(exp,mixed,exp_no,duration,ip,delay,size):
 			run('mkdir exps/'+exp)
                 cmd_env = 'env dir='+exp+' num='+exp_no+' mixed='+mixed+' '
                 #cmd_wrk = ' ./wrk -t1 -c25 -d'+duration+' -R25'
-                cmd_wrk = ' ./wrk -t1 -c5 -d'+duration+' -R5 --script scripts/report'+delay+'.lua '
+                cmd_wrk = ' ./wrk -t1 -c'+req1+' -d'+duration+' -R'+req1+' --script scripts/report'+delay+'.lua '
 		cmd_wrk_url = ' http://'+ip+'/'+size+'Mb.html '
 		cmd =  cmd_env+cmd_wrk+cmd_wrk_url
 		run('echo '+cmd+' > command')
@@ -270,7 +292,7 @@ def run_exp_client(exp,mixed,exp_no,duration,ip,delay,size):
                         sudo('at now + 2 minutes < retrans_cmd1')
 
 @roles('client')
-def run_exp_client2(exp,mixed,exp_no,duration,ip,size):
+def run_exp_client2(exp,mixed,exp_no,duration,ip,size,req2):
 	"""Client background(shared) traffic"""
 	port = '8080'
 	#for i in ['ipip','tcplp','ledbat','tcpvegas']:
@@ -283,13 +305,13 @@ def run_exp_client2(exp,mixed,exp_no,duration,ip,size):
 		with warn_only():
                         run('mkdir exps/'+exp)
                 cmd_env = 'env dir='+exp+' num='+exp_no+' mixed='+mixed+' '
-		cmd_wrk = ' ./wrk -t1 -c25 -d'+duration+' -R25 --timeout 55s --script scripts/report.lua'
+		cmd_wrk = ' ./wrk -t1 -c'+req2+' -d'+duration+' -R'+req2+' --timeout 55s --script scripts/report.lua'
                 cmd_wrk_url = ' http://'+ip+':'+port+'/'+size+'Mb.html '
                 cmd =  cmd_env+cmd_wrk+cmd_wrk_url
                 run('echo '+cmd+' > command')
                 run('at now + 2 minutes < command')
 
-def run_exp(exp,mixed,exp_no,duration,delay="delay",size='008'):
+def run_exp(exp,mixed,exp_no,duration,delay="delay",size='008',req1='5',req2='25'):
 	"""Experiment traffic and background traffic from client, if mix chosen"""
 	#exp = raw_input('Exp name?')
 	#mixed = raw_input('mixed?(mix/no)')
@@ -297,9 +319,9 @@ def run_exp(exp,mixed,exp_no,duration,delay="delay",size='008'):
 	##FILE_SIZE = raw_input('File size? (1Mb)')
 	#duration = raw_input('Duration? (20s)')
 	ip = "147.83.118.123"
-	execute(run_exp_client,exp,mixed,exp_no,duration,ip,delay,size)
+	execute(run_exp_client,exp,mixed,exp_no,duration,ip,delay,size,req1)
 	if mixed == 'mix':
-		execute(run_exp_client2,exp,mixed,exp_no,duration,ip,size)
+		execute(run_exp_client2,exp,mixed,exp_no,duration,ip,size,req2)
 
 def setup_nat(inface,outface):
 	sudo('iptables -t nat -A POSTROUTING -o '+outface+' -j MASQUERADE')
@@ -340,14 +362,33 @@ def clear_nat_now(inface,outface):
                 sudo('iptables -D FORWARD -i '+inface+'  -o '+outface+' -j ACCEPT')
 
 @roles('router')
-def restore_nat():
+def restore_nat1():
 	execute(setup_nat,inface='enx00e04c534458',outface='enp0s25')
 	execute(setup_nat_8080,inface='enx00e04c534458',outface='enp0s25')
 
+@roles('client')
+def restore_route():
+        with warn_only():
+                sudo('ip route add default via 192.168.240.1')
+
+def restore_nat():
+	execute(restore_nat1)
+	execute(restore_route)
+
+
 @roles('router')
-def delete_nat():
+def delete_nat1():
 	execute(clear_nat,inface='enx00e04c534458',outface='enp0s25')
 	execute(clear_nat_8080,inface='enx00e04c534458',outface='enp0s25')
+
+@roles('client')
+def delete_route():
+        with warn_only():
+                sudo('ip route del default via 192.168.240.1')
+
+def delete_nat():
+	execute(delete_nat1)
+	execute(delete_route)
 
 
 def setup_limit():
