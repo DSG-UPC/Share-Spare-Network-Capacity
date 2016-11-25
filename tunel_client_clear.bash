@@ -17,3 +17,4 @@ sudo ip route flush table primary
 sudo ip route flush table secondary
 sudo iptables -t nat -D POSTROUTING -o enp0s25 -j MASQUERADE
 sudo iptables -t nat -D POSTROUTING -o $TUNINT -j MASQUERADE
+

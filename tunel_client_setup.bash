@@ -23,3 +23,4 @@ sudo iptables -t nat -A POSTROUTING -o $TUNINT -j MASQUERADE
 #Copy other routes to the new tables
 #ip route show table main | grep -Ev ^default | while read ROUTE ; do sudo ip route add table primary $ROUTE; done
 #ip route show table main | grep -Ev ^default | while read ROUTE ; do sudo ip route add table secondary $ROUTE; done
+
